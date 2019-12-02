@@ -1,0 +1,82 @@
+org: filipwx7
+app: teste
+service: serverless-api-tools
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+functions:
+  create:
+    handler: tools/create.create
+    events:
+      - http:
+          path: tools
+          method: post
+          cors: true
+
+  list:
+    handler: tools/list.list
+    events:
+      - http:
+          path: tools
+          method: get
+          cors: true
+
+  get:
+    handler: tools/get.get
+    events:
+      - http:
+          path: tools/{id}
+          method: get
+          cors: true
+
+  update:
+    handler: tools/update.update
+    events:
+      - http:
+          path: tools/{id}
+          method: put
+          cors: true
+
+  delete:
+    handler: tools/delete.delete
+    events:
+      - http:
+          path: tools/{id}
+          method: delete
+          cors: true
+
+resources:
+  Resources:
+    toolsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
